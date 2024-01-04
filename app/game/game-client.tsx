@@ -4,7 +4,6 @@ import * as Ably from 'ably';
 import { Types } from "ably";
 import { AblyProvider, useAbly, useChannel, usePresence } from "ably/react"
 import { MouseEventHandler, MouseEvent, useState, useEffect } from 'react'
-import Logger, { LogEntry } from '../../components/logger';
 import GameComponent from '../../components/Game';
 import PlayerInfo from "../../components/playerInfoTypes";
 import Sidebar from '../../components/SidebarPresence';
@@ -103,12 +102,6 @@ const { presenceData, updateStatus } = usePresence(
   }
 );
 
-
-
- 
-
-
-
   const getDirection = (key: string): string | null => {
     const keyDirectionMap: { [key: string]: string } = {
       ArrowLeft: 'LEFT',
@@ -123,8 +116,12 @@ const { presenceData, updateStatus } = usePresence(
     const handleKeyPress = (event: KeyboardEvent): void => {
       const direction = getDirection(event.key);
       
+      if (direction === 'UP' || direction === 'DOWN') {
+        // Prevent default scrolling behavior for up and down arrow keys
+        event.preventDefault();
+      }  
+
       if (direction) {
-        
         userDataChannel.publish(`${clientId}-moves`, direction)
           .then(() => console.log(`Published direction ${direction} to ${clientId}`))
           .catch((error) => console.error('Error publishing direction:', error));
