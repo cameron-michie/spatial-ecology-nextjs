@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as Ably from 'ably/promises';
 
 interface MenuItemProps { 
   id: string,
@@ -10,9 +11,37 @@ interface MenuItemProps {
   
 export default function MenuItem(props:MenuItemProps) {
   const [imageSrc, setImageSrc] = useState('');
+  const [showInput, setShowInput] = useState(false);
+  const [name, setName] = useState('');
+  const [nameChanged, setNameChanged] = useState(false);
+
+  const inputName = () => {
+    setShowInput(true);
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value.slice(0, 10);
+    setName(name);
+    setNameChanged(true);
+    const tempRestClient = new Ably.Rest({
+      authUrl: '/token',
+      authMethod: 'POST',
+      clientId: `rest_${Date.now().toString().slice(-5)}`
+    });
+
+    var channel = tempRestClient.channels.get('user-data-channel');
+    channel.publish('user-name-update', {"id": props.id, "name": name});
+  };
+
+  const handleSubmit = () => {
+    console.log("Submitted value:", name);
+    setShowInput(false);
+  };
+
   useEffect(() => {
     setImageSrc(props.macro);
   }, [props.macro]);
+
 
   return (
     <div className={`flex justify-center items-center rounded-md w-[272px] mb-2 h-10 hover:bg-white group ${props.active && "bg-slate-200"}`}>
@@ -23,8 +52,23 @@ export default function MenuItem(props:MenuItemProps) {
         }
       </div>
       <div className="flex-grow">
-        <p>{props.name}</p>
-        <p>Energy: {props.energy}</p>
+        <div>
+            {props.active ? (
+              showInput ? (
+                <div>
+                  <input type="text" value={name} onChange={handleNameChange} />
+                  <button onClick={handleSubmit}>Submit</button>
+                </div>
+              ) : (
+                <div onClick={inputName}>{nameChanged ? name : "Click to name"}</div>
+              )
+            ) : (
+              props.name !== "default" ? props.name : "user_" + props.id.slice(-5)
+            )}
+          </div>
+        <p>  
+          Energy: {props.energy}
+        </p>
       </div>
       <style>
         {`

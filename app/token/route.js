@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as Ably from "ably/promises";
 
-export async function POST(req: Request) {
+export async function POST(req) {
   if (!process.env.ABLY_API_KEY) {
     return NextResponse.json({ errorMessage: `Missing ABLY_API_KEY environment variable.
         If you're running locally, please ensure you have a ./.env file with a value for ABLY_API_KEY=your-key.
@@ -14,10 +14,18 @@ export async function POST(req: Request) {
         })
       });
   }
-
-  const clientId = ( (await req.formData()).get('clientId')?.toString() ) || process.env.DEFAULT_CLIENT_ID || "NO_CLIENT_ID";
+  const formData = await req.formData();
+  const clientId = formData.get('clientId')?.toString() || process.env.DEFAULT_CLIENT_ID || "NO_CLIENT_ID";
   const client = new Ably.Rest(process.env.ABLY_API_KEY);
-  const tokenRequestData = await client.auth.createTokenRequest({ clientId: clientId });
-  console.log(tokenRequestData)
-  return NextResponse.json(tokenRequestData)
+  const capabilities = {
+      "spatial-ecology-game": ["publish", "subscribe"],
+      "user-data-channel": ["publish", "presence", "subscribe"]
+  };
+
+  const tokenParams = { clientId, capability: capabilities};
+  const tokenRequestData = await client.auth.createTokenRequest(tokenParams);
+  console.log(tokenRequestData);
+
+  return NextResponse.json(tokenRequestData);
+
 }

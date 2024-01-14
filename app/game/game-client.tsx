@@ -49,7 +49,6 @@ const Game: React.FC<GameProps> = ({ clientId }) => {
 
   const [playersInfo, setPlayersInfo] = useState<Record<string, PlayerInfo>>({});
 
-
   const { channel : userDataChannel, ably: ablyClient} = useChannel(
     { channelName: "user-data-channel" },  (message: Types.Message) => {
       if (message.name == "user-data-update") {
@@ -57,9 +56,26 @@ const Game: React.FC<GameProps> = ({ clientId }) => {
         const { clientId, energy, characterMacro } = message.data;
         setPlayersInfo(prev => ({
           ...prev,
-          [clientId]: { clientId: clientId, name: "user_" + clientId.slice(-5), energy: energy, characterMacro: characterMacro }
+          [clientId]: { clientId: clientId, name: "default", energy: energy, characterMacro: characterMacro }
         }));
-        // console.log("user data update: " + clientId);
+      }
+
+      if (message.name == "user-name-update") {
+        const playerName : string = message.data["name"];
+        const id : string = message.data["id"]; 
+        console.log("setting player name " + playerName + " to id " + id);
+        setPlayersInfo(prev => {
+          const existingPlayer = prev[id];
+          return {
+            ...prev,
+            [id]: {
+              clientId: id,
+              name: playerName,
+              energy: existingPlayer ? existingPlayer.energy : 0,
+              characterMacro: existingPlayer ? existingPlayer.characterMacro : ""
+            }
+          };
+        });
       }
     }
   );
@@ -71,7 +87,7 @@ userDataChannel.presence.get().then(presenceMessages => {
         ...prev,
         [presenceMessage.clientId]: {
           clientId: presenceMessage.clientId,
-          name: "user_" + presenceMessage.clientId.slice(-5),
+          name: existingPlayer ? ( existingPlayer.name!="default" ? existingPlayer.name : "default" ) : "default",
           energy: existingPlayer ? existingPlayer.energy : 0,
           characterMacro: existingPlayer ? existingPlayer.characterMacro : ""
         }
@@ -83,8 +99,8 @@ userDataChannel.presence.get().then(presenceMessages => {
 });
 
 const { presenceData, updateStatus } = usePresence(
-  { channelName: "user-data-channel" }, 'enter', 
-  (presenceMessage) => {
+  { channelName: "user-data-channel" }, 'presence-update', 
+  (presenceMessage) => { 
     if (presenceMessage.action === 'enter') {
       setPlayersInfo(prev => {
         const existingPlayer = prev[presenceMessage.clientId];
@@ -92,13 +108,21 @@ const { presenceData, updateStatus } = usePresence(
           ...prev,
           [presenceMessage.clientId]: {
             clientId: presenceMessage.clientId,
-            name: "user_"+presenceMessage.clientId.slice(-5),
+            name: "default",
             energy: existingPlayer ? existingPlayer.energy : 0,
             characterMacro: existingPlayer ? existingPlayer.characterMacro : ""
           }
         };
       });
     }
+
+    if (presenceMessage.action === 'leave') {
+      setPlayersInfo(prev => {
+          const updatedPlayersInfo = { ...prev };
+          delete updatedPlayersInfo[presenceMessage.clientId];
+          return updatedPlayersInfo;
+      });
+  }
   }
 );
 
