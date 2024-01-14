@@ -68,12 +68,12 @@ const Home = () => {
                         <br />
                       </div>
                       <div className="flex justify-between items-center gap-1 rounded-md w-24 h-5 overflow-hidden">
-                        <a href="/game-rules">
+                        
                         <div className="font-manrope text-sm min-w-[78px] whitespace-nowrap text-sky-600 text-opacity-100 leading-5 font-medium">
-                          See video here
+                          
                         </div>
-                        </a>
-                        <a href="/game-rules">
+                        
+                        
                         <div className="flex flex-col justify-center items-center w-4 h-4">
                         <img
                             width="10.3px"
@@ -82,7 +82,7 @@ const Home = () => {
                             alt="Explore Now"
                           />
                         </div>
-                        </a>
+                        
                       </div>
                     </div>
                   </div>
