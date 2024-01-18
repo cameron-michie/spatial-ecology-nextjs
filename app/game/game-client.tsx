@@ -1,13 +1,12 @@
-'use client'
-
+"use client"
 import * as Ably from 'ably';
 import { Types } from "ably";
 import { AblyProvider, useAbly, useChannel, usePresence } from "ably/react"
-import { MouseEventHandler, MouseEvent, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import GameComponent from '../../components/Game';
+import GameControlBar from '../../components/GameControlBar';
 import PlayerInfo from "../../components/playerInfoTypes";
 import Sidebar from '../../components/SidebarPresence';
-import { error } from 'console';
 
 export default function GameClient() {
   const [client, setClient] = useState<InstanceType<typeof Ably.Realtime.Promise> | null>(null);
@@ -44,20 +43,32 @@ export default function GameClient() {
 interface GameProps {
   clientId: string;
 }
+type GameState = {
+  predator: number;
+  prey: number;
+  isGamePlaying: boolean;
+};
 
 const Game: React.FC<GameProps> = ({ clientId }) => {
 
   const [playersInfo, setPlayersInfo] = useState<Record<string, PlayerInfo>>({});
+  const [preyPred, setPreyPred] = useState<GameState>({ prey: 0, predator: 0, isGamePlaying: false });
 
   const { channel : userDataChannel, ably: ablyClient} = useChannel(
     { channelName: "user-data-channel" },  (message: Types.Message) => {
       if (message.name == "user-data-update") {
         
-        const { clientId, energy, characterMacro } = message.data;
+        const { clientId, energy, characterMacro, numPrey, numPred } = message.data;
         setPlayersInfo(prev => ({
           ...prev,
           [clientId]: { clientId: clientId, name: "default", energy: energy, characterMacro: characterMacro }
         }));
+
+        setPreyPred(prevState => ({
+          ...prevState,
+          prey: numPrey,
+          predator: numPred
+      }));
       }
 
       if (message.name == "user-name-update") {
@@ -76,6 +87,14 @@ const Game: React.FC<GameProps> = ({ clientId }) => {
             }
           };
         });
+      }
+
+      if (message.name === "game-update") {
+        const isGamePlaying = message.data === "start";
+        setPreyPred(prevState => ({
+            ...prevState,
+            isGamePlaying: isGamePlaying
+        }));
       }
     }
   );
@@ -165,6 +184,7 @@ const { presenceData, updateStatus } = usePresence(
       <>
         <div className="flex">
           <Sidebar players={playersInfo} thisClientId={clientId} />
+          <GameControlBar gameState={preyPred} />
           <GameComponent />
        </div>
       </>
