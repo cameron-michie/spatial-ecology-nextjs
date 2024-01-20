@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
-import { useChannel, usePresence } from 'ably/react';
+import React from 'react';
 import MenuItem from "./MenuItemPresence";
-import { Types } from "ably";
 import PlayerInfo from "./playerInfoTypes"
   
 interface SidebarProps {
